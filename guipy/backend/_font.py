@@ -4,6 +4,7 @@ import glob as globmod
 import freetype
 import numpy as np
 from guipy.backend._surface import Surface
+from guipy.backend import _gpu
 
 # Cached font search paths per platform
 _font_dirs = None
@@ -122,7 +123,9 @@ class Font:
                 self._face = freetype.Face(fallback)
             else:
                 raise RuntimeError("No font found")
-        self._face.set_char_size(size * 64)  # freetype uses 1/64 pixel units
+        # Render at physical resolution for HiDPI clarity
+        s = _gpu.get_dpi_scale()
+        self._face.set_char_size(int(size * s * 64))  # freetype uses 1/64 pixel units
 
     def render(self, text, antialias, color, background=None):
         """Render text to a Surface."""
@@ -153,8 +156,8 @@ class Font:
             })
             total_width += glyph.advance.x >> 6
 
-        height = self.get_linesize()
-        ascender = self._face.size.ascender >> 6
+        height = self._face.size.height >> 6  # physical pixels
+        ascender = self._face.size.ascender >> 6  # physical pixels
 
         if total_width <= 0:
             total_width = 1
@@ -189,23 +192,28 @@ class Font:
 
             pen_x += glyph_data['advance']
 
-        return Surface._from_array(arr)
+        s = _gpu.get_dpi_scale()
+        logical_size = (round(total_width / s), round(height / s))
+        return Surface._from_array(arr, logical_size=logical_size)
 
     def size(self, text):
-        """Return (width, height) of rendered text."""
+        """Return (width, height) of rendered text in logical pixels."""
         if not text:
             return (0, self.get_height())
         total_width = 0
         for char in text:
             self._face.load_char(char, freetype.FT_LOAD_RENDER)
             total_width += self._face.glyph.advance.x >> 6
-        return (total_width, self.get_height())
+        s = _gpu.get_dpi_scale()
+        return (round(total_width / s), self.get_height())
 
     def get_height(self):
-        return (self._face.size.ascender - self._face.size.descender) >> 6
+        s = _gpu.get_dpi_scale()
+        return round(((self._face.size.ascender - self._face.size.descender) >> 6) / s)
 
     def get_linesize(self):
-        return self._face.size.height >> 6
+        s = _gpu.get_dpi_scale()
+        return round((self._face.size.height >> 6) / s)
 
 
 def SysFont(name, size, bold=False, italic=False):

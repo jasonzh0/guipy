@@ -15,16 +15,24 @@ def rect(surface, color, rect_arg, width=0, border_radius=0, antialias=True):
         rx, ry, rw, rh = rect_arg.x, rect_arg.y, rect_arg.w, rect_arg.h
     else:
         rx, ry, rw, rh = int(rect_arg[0]), int(rect_arg[1]), int(rect_arg[2]), int(rect_arg[3])
-    _gpu.draw_rect(surface._fbo, surface.get_size(), c, rx, ry, rw, rh, width, border_radius)
+    s = _gpu.get_dpi_scale()
+    _gpu.draw_rect(surface._fbo, surface._phys_size(), c,
+                   rx * s, ry * s, rw * s, rh * s,
+                   width * s, border_radius * s)
 
 
 def circle(surface, color, center, radius, width=0, antialias=True):
     c = _normalize_color(color)
-    _gpu.draw_circle(surface._fbo, surface.get_size(), c,
-                     int(center[0]), int(center[1]), int(radius), width)
+    s = _gpu.get_dpi_scale()
+    _gpu.draw_circle(surface._fbo, surface._phys_size(), c,
+                     int(center[0]) * s, int(center[1]) * s,
+                     int(radius) * s, width * s)
 
 
 def line(surface, color, start, end, width=1, antialias=True):
     c = _normalize_color(color)
-    _gpu.draw_line(surface._fbo, surface.get_size(), c,
-                   int(start[0]), int(start[1]), int(end[0]), int(end[1]), width)
+    s = _gpu.get_dpi_scale()
+    _gpu.draw_line(surface._fbo, surface._phys_size(), c,
+                   int(start[0]) * s, int(start[1]) * s,
+                   int(end[0]) * s, int(end[1]) * s,
+                   width * s)

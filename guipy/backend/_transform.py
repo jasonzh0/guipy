@@ -7,10 +7,10 @@ def rotate(surface, angle):
 
     Uses numpy-based rotation as a simple fallback.
     """
-    # Read pixels from GPU
-    w, h = surface.get_size()
+    # Read pixels from GPU (physical dimensions)
+    pw, ph = surface._phys_size()
     data = surface._fbo.read(components=4)
-    arr = np.frombuffer(data, dtype=np.uint8).reshape(h, w, 4)
+    arr = np.frombuffer(data, dtype=np.uint8).reshape(ph, pw, 4)
     arr = np.flipud(arr).copy()
 
     # Apply rotation using numpy (90-degree increments are exact, others approximate)

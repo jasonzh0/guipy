@@ -4,6 +4,7 @@ from guipy.backend._shaders import (
 )
 
 _ctx = None
+_dpi_scale = 1.0
 _rect_prog = None
 _circle_prog = None
 _line_prog = None
@@ -15,11 +16,12 @@ _line_vao = None
 _blit_vao = None
 
 
-def init_gpu(ctx):
-    global _ctx, _rect_prog, _circle_prog, _line_prog, _blit_prog
+def init_gpu(ctx, dpi_scale=1.0):
+    global _ctx, _dpi_scale, _rect_prog, _circle_prog, _line_prog, _blit_prog
     global _quad_vbo, _rect_vao, _circle_vao, _line_vao, _blit_vao
 
     _ctx = ctx
+    _dpi_scale = dpi_scale
 
     import numpy as np
     vertices = np.array([
@@ -49,9 +51,14 @@ def get_context():
     return _ctx
 
 
-def _setup_blend(fbo, surface_size):
+def get_dpi_scale():
+    return _dpi_scale
+
+
+def _setup_blend(fbo, phys_size):
+    """Set up FBO with blending. phys_size is in physical pixels."""
     fbo.use()
-    _ctx.viewport = (0, 0, surface_size[0], surface_size[1])
+    _ctx.viewport = (0, 0, phys_size[0], phys_size[1])
     _ctx.enable(moderngl.BLEND)
     _ctx.blend_func = (
         moderngl.SRC_ALPHA, moderngl.ONE_MINUS_SRC_ALPHA,
@@ -60,6 +67,7 @@ def _setup_blend(fbo, surface_size):
 
 
 def draw_rect(fbo, surface_size, color, x, y, w, h, border_width=0, border_radius=0):
+    """All coordinates are in physical pixels."""
     _setup_blend(fbo, surface_size)
 
     pad = 1
@@ -82,6 +90,7 @@ def draw_rect(fbo, surface_size, color, x, y, w, h, border_width=0, border_radiu
 
 
 def draw_circle(fbo, surface_size, color, cx, cy, radius, border_width=0):
+    """All coordinates are in physical pixels."""
     _setup_blend(fbo, surface_size)
 
     pad = 2
@@ -104,6 +113,7 @@ def draw_circle(fbo, surface_size, color, cx, cy, radius, border_width=0):
 
 
 def draw_line(fbo, surface_size, color, x0, y0, x1, y1, width=1):
+    """All coordinates are in physical pixels."""
     _setup_blend(fbo, surface_size)
 
     pad = int(width / 2) + 2
@@ -125,15 +135,16 @@ def draw_line(fbo, surface_size, color, x0, y0, x1, y1, width=1):
     _ctx.disable(moderngl.BLEND)
 
 
-def blit_texture(dst_fbo, dst_size, src_texture, src_size, dest_pos):
-    _setup_blend(dst_fbo, dst_size)
+def blit_texture(dst_fbo, dst_phys_size, src_texture, src_phys_size, dest_pos_phys):
+    """All coordinates/sizes are in physical pixels."""
+    _setup_blend(dst_fbo, dst_phys_size)
 
-    dx, dy = float(dest_pos[0]), float(dest_pos[1])
-    sw, sh = float(src_size[0]), float(src_size[1])
+    dx, dy = float(dest_pos_phys[0]), float(dest_pos_phys[1])
+    sw, sh = float(src_phys_size[0]), float(src_phys_size[1])
 
     _blit_prog['u_pos'].value = (dx, dy)
     _blit_prog['u_size'].value = (sw, sh)
-    _blit_prog['u_surface_size'].value = (float(dst_size[0]), float(dst_size[1]))
+    _blit_prog['u_surface_size'].value = (float(dst_phys_size[0]), float(dst_phys_size[1]))
 
     src_texture.use(0)
     if 'u_texture' in _blit_prog:

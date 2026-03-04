@@ -40,8 +40,13 @@ class Window:
         self._width = width
         self._height = height
 
-        # Initialize GPU subsystem with this context
-        _gpu.init_gpu(self._ctx)
+        # Compute DPI scale — works cross-platform:
+        # macOS Retina: 2.0, Windows 150%: 1.5, 1x displays: 1.0
+        scale_x, _ = glfw.get_window_content_scale(self._window)
+        self._dpi_scale = scale_x
+
+        # Initialize GPU subsystem with this context and DPI scale
+        _gpu.init_gpu(self._ctx, self._dpi_scale)
 
         # Fullscreen quad for final screen blit
         vertices = np.array([
