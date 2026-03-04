@@ -12,7 +12,7 @@ K_BACKSPACE = 0x08
 
 
 class Event:
-    """Simple event dataclass replacing pygame.event.Event."""
+    """Simple event dataclass for input and window events."""
 
     def __init__(self, event_type, **kwargs):
         self.type = event_type

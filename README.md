@@ -6,7 +6,7 @@
 
 GPU-accelerated UI library built by Casey (@caseyhackerman) and Jason
 
-Uses moderngl + glfw for rendering and windowing, with Pillow for text.
+All rendering is GPU-accelerated via moderngl + glfw, with SDF-based shape drawing and HiDPI support. Text is rasterized with freetype-py.
 
 ## Installation
 

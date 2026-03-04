@@ -1,5 +1,5 @@
 class Rect:
-    """Pure Python replacement for pygame.Rect."""
+    """Axis-aligned rectangle with position and size."""
 
     def __init__(self, x, y, w, h):
         self.x = int(x)

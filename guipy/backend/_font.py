@@ -111,7 +111,7 @@ def _get_fallback_font_path():
 
 
 class Font:
-    """freetype-py based font replacement for pygame.font.Font."""
+    """Font renderer using freetype-py. Renders glyphs at physical DPI resolution."""
 
     def __init__(self, path, size):
         self._size = size

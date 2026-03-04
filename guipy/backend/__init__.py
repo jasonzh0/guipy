@@ -12,5 +12,5 @@ from guipy.backend._renderer import Window
 
 
 def init():
-    """Initialize the backend (replaces pygame.init() + pygame.font.init())."""
+    """Initialize the backend."""
     pass

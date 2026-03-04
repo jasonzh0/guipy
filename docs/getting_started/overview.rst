@@ -2,4 +2,4 @@
 
 Overview
 ========
-Guipy is a UI Library for pygame
+Guipy is a GPU-accelerated UI library built on moderngl + glfw. Shapes are rendered using SDF fragment shaders with HiDPI support, and text is rasterized with freetype-py.
