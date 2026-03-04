@@ -40,10 +40,12 @@ class Window:
         self._width = width
         self._height = height
 
-        # Compute DPI scale — works cross-platform:
-        # macOS Retina: 2.0, Windows 150%: 1.5, 1x displays: 1.0
+        # Compute DPI scale: use framebuffer ratio (works on macOS Retina)
+        # and content scale (works on Windows DPI scaling), take the max
+        fb_w, fb_h = glfw.get_framebuffer_size(self._window)
+        fb_scale = fb_w / width
         scale_x, _ = glfw.get_window_content_scale(self._window)
-        self._dpi_scale = scale_x
+        self._dpi_scale = max(fb_scale, scale_x)
 
         # Initialize GPU subsystem with this context and DPI scale
         _gpu.init_gpu(self._ctx, self._dpi_scale)
@@ -114,20 +116,37 @@ class Window:
         return events
 
     def get_mouse_pos(self):
-        """Get current mouse position."""
+        """Get mouse position in surface logical coordinates."""
         x, y = glfw.get_cursor_pos(self._window)
-        return (int(x), int(y))
+        # Transform from window coords to surface logical coords
+        win_w, win_h = glfw.get_window_size(self._window)
+        scale = min(win_w / self._width, win_h / self._height)
+        offset_x = (win_w - self._width * scale) / 2
+        offset_y = (win_h - self._height * scale) / 2
+        return (int((x - offset_x) / scale), int((y - offset_y) / scale))
 
     def display(self, surface):
-        """Render the surface's texture to screen."""
-        # Bind default framebuffer (screen)
+        """Render the surface's texture to screen, preserving aspect ratio."""
         self._ctx.screen.use()
-        fb_width, fb_height = glfw.get_framebuffer_size(self._window)
-        self._ctx.viewport = (0, 0, fb_width, fb_height)
+        fb_w, fb_h = glfw.get_framebuffer_size(self._window)
+        tex_w, tex_h = surface._phys_size()
+
+        # Letterbox: fit surface into framebuffer without stretching
+        scale = min(fb_w / tex_w, fb_h / tex_h)
+        vw = int(tex_w * scale)
+        vh = int(tex_h * scale)
+        vx = (fb_w - vw) // 2
+        vy = (fb_h - vh) // 2
+
+        # Clear full framebuffer for letterbox bars
+        self._ctx.viewport = (0, 0, fb_w, fb_h)
+        self._ctx.clear()
+
+        # Set letterboxed viewport and render
+        self._ctx.viewport = (vx, vy, vw, vh)
         self._ctx.disable(moderngl.BLEND)
 
         surface._texture.use(0)
-        self._ctx.clear()
         self._vao.render(moderngl.TRIANGLE_STRIP)
         glfw.swap_buffers(self._window)
 

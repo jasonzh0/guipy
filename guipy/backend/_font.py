@@ -123,9 +123,13 @@ class Font:
                 self._face = freetype.Face(fallback)
             else:
                 raise RuntimeError("No font found")
-        # Render at physical resolution for HiDPI clarity
+        # Cache exact 1x metrics so layout is DPI-independent
+        self._face.set_char_size(size * 64)
+        self._logical_height = (self._face.size.ascender - self._face.size.descender) >> 6
+        self._logical_linesize = self._face.size.height >> 6
+        # Switch to physical resolution for crisp rendering
         s = _gpu.get_dpi_scale()
-        self._face.set_char_size(int(size * s * 64))  # freetype uses 1/64 pixel units
+        self._face.set_char_size(int(size * s * 64))
 
     def render(self, text, antialias, color, background=None):
         """Render text to a Surface."""
@@ -193,27 +197,25 @@ class Font:
             pen_x += glyph_data['advance']
 
         s = _gpu.get_dpi_scale()
-        logical_size = (round(total_width / s), round(height / s))
+        logical_size = (round(total_width / s), self._logical_linesize)
         return Surface._from_array(arr, logical_size=logical_size)
 
     def size(self, text):
         """Return (width, height) of rendered text in logical pixels."""
         if not text:
-            return (0, self.get_height())
+            return (0, self._logical_height)
         total_width = 0
         for char in text:
             self._face.load_char(char, freetype.FT_LOAD_RENDER)
             total_width += self._face.glyph.advance.x >> 6
         s = _gpu.get_dpi_scale()
-        return (round(total_width / s), self.get_height())
+        return (round(total_width / s), self._logical_height)
 
     def get_height(self):
-        s = _gpu.get_dpi_scale()
-        return round(((self._face.size.ascender - self._face.size.descender) >> 6) / s)
+        return self._logical_height
 
     def get_linesize(self):
-        s = _gpu.get_dpi_scale()
-        return round((self._face.size.height >> 6) / s)
+        return self._logical_linesize
 
 
 def SysFont(name, size, bold=False, italic=False):
