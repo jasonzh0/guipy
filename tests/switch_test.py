@@ -2,12 +2,11 @@ import sys
 import os
 import inspect
 
-import pygame
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
+from guipy.backend import Window, Surface, QUIT
 from guipy.manager import GUIManager
 from guipy.components.switch import Switch
 from guipy.utils import *
@@ -23,7 +22,8 @@ def func1(switch):
 winW = 1280
 winH = 720
 
-root = pygame.display.set_mode((winW, winH))
+window = Window(winW, winH, "Switch Test")
+root = Surface((winW, winH))
 
 man = GUIManager()
 mySwitch1 = Switch(width=20, height=10).set_callback(func1)
@@ -35,13 +35,14 @@ man.add(mySwitch1, (10, 25))
 man.add(mySwitch2, (10, 75))
 man.add(mySwitch3, (10, 125))
 man.add(mySwitch4, (10, 175))
-while True:
-    events = pygame.event.get()
+while not window.should_close():
+    events = window.get_events()
     for event in events:
-        if event.type == pygame.QUIT:
+        if event.type == QUIT:
+            window.destroy()
             sys.exit()
 
     root.fill(WHITE)
 
-    man.update(pygame.mouse.get_pos(), events, root)
-    pygame.display.update()
+    man.update(window.get_mouse_pos(), events, root)
+    window.display(root)

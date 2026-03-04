@@ -30,7 +30,7 @@ class GUIManager:
         Update all components in the manager, and render onto root
 
         :param mouse_pos: Mouse position used to update the components so components understand the relative location
-        :param events: pygame events used to update the components
+        :param events: events used to update the components
 
 
         :param root: the surface these components should be drawn on

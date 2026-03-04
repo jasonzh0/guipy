@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import Surface, draw, MOUSEBUTTONDOWN, KEYDOWN, K_RETURN, K_BACKSPACE
 from guipy.components._component import Component
 from guipy.utils import *
 
@@ -13,7 +13,7 @@ class Textbox(Component):
         Textbox init
 
         :param width: Width of the textbox (height is defined by font)
-        :param font: Pygame Font object to be used
+        :param font: Font object to be used
         :param default_text: Text to be shown when textbox is empty
         """
         if font == None:
@@ -23,7 +23,7 @@ class Textbox(Component):
 
         self.width = width
         self.height = font.get_height() + 4
-        self.root = pygame.Surface((self.width, self.height))
+        self.root = Surface((self.width, self.height))
 
         self.text = ""
         self.default = default_text
@@ -55,23 +55,23 @@ class Textbox(Component):
         self.root.blit(text, (4, 1))
 
         if self.active:
-            pygame.draw.rect(self.root, (0, 0, 0), self.root.get_rect(), width=2)
+            draw.rect(self.root, (0, 0, 0), self.root.get_rect(), width=2)
         else:
-            pygame.draw.rect(self.root, (0, 0, 0), self.root.get_rect(), width=1)
+            draw.rect(self.root, (0, 0, 0), self.root.get_rect(), width=1)
 
     def update(self, rel_mouse, events):
         """
         Update the textbox
 
         :param rel_mouse: Relative mouse position
-        :param events: Pygame Event list (used to read keypresses)
+        :param events: Event list (used to read keypresses)
         """
         keydowns = []
         on_click = False
         for event in events:
-            if event.type == pygame.KEYDOWN:
+            if event.type == KEYDOWN:
                 keydowns.append(event)
-            elif event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == MOUSEBUTTONDOWN:
                 on_click = True
 
         if on_click:
@@ -83,10 +83,10 @@ class Textbox(Component):
         if self.active:
             for event in keydowns:
                 # check for backspace
-                if event.key == pygame.K_RETURN:
+                if event.key == K_RETURN:
                     if self.func != None:
                         self.func(self)
-                elif event.key == pygame.K_BACKSPACE:
+                elif event.key == K_BACKSPACE:
                     self.text = self.text[:-1]
                 else:  # add character
                     self.text += event.unicode

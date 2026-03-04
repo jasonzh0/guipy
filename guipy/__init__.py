@@ -1,4 +1,3 @@
-import pygame
+from guipy.backend import init
 
-pygame.init()
-pygame.font.init()
+init()

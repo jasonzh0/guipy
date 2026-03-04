@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import SysFont, get_fonts
 
 
 def add_vector(a, b):
@@ -42,8 +42,7 @@ def translate(value, min1, max1, min2, max2):
 
 
 def get_default_font():
-    font_name = pygame.font.get_fonts()[0]
-    return pygame.font.SysFont(font_name, 20)
+    return SysFont(None, 20)
 
 
 def clip(value, min1, max1):

@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import Surface, Rect, draw, MOUSEBUTTONDOWN
 from guipy.components._component import Component
 from guipy.utils import *
 
@@ -13,7 +13,7 @@ class Dropdown(Component):
         Dropdown init
 
         :param width: Menu width in pixels
-        :param font: pygame Font object to use
+        :param font: Font object to use
         """
         if font == None:
             self.font = get_default_font()
@@ -47,7 +47,7 @@ class Dropdown(Component):
         w = self.width - self.height
         n = len(self.options)
         if self.open:
-            self.root = pygame.Surface(
+            self.root = Surface(
                 (self.width, self.height * (n + 1))
             ).convert_alpha()
             self.root.fill((200, 200, 200, 150))
@@ -55,31 +55,31 @@ class Dropdown(Component):
             for i in range(n):
                 y = (i + 1) * self.height
                 if i == self.highlighted:
-                    box = pygame.Rect(0, y, self.width, self.height)
-                    pygame.draw.rect(self.root, (170, 170, 170, 150), box)
+                    box = Rect(0, y, self.width, self.height)
+                    draw.rect(self.root, (170, 170, 170, 150), box)
                 text = self.font.render(str(self.options[i]), True, BLACK)
                 self.root.blit(text, (3, y))
         else:
-            self.root = pygame.Surface((self.width, self.height)).convert_alpha()
+            self.root = Surface((self.width, self.height)).convert_alpha()
 
-        box = pygame.Rect(0, 0, self.width, self.height)
-        pygame.draw.rect(self.root, WHITE, box)
+        box = Rect(0, 0, self.width, self.height)
+        draw.rect(self.root, WHITE, box)
         if self.value != None:
             text = self.font.render(str(self.value), True, BLACK)
             self.root.blit(text, (3, 0))
-        arrow = pygame.Rect(self.width - self.height, 0, self.height, self.height)
-        pygame.draw.rect(self.root, GREY, arrow)
+        arrow = Rect(self.width - self.height, 0, self.height, self.height)
+        draw.rect(self.root, GREY, arrow)
         y = self.height // 2
         x = y + w
         if self.open:
-            pygame.draw.line(
+            draw.line(
                 self.root,
                 WHITE,
                 (x, y - self.height // 6),
                 (x - self.height // 3, y + self.height // 6),
                 2,
             )
-            pygame.draw.line(
+            draw.line(
                 self.root,
                 WHITE,
                 (x, y - self.height // 6),
@@ -87,21 +87,21 @@ class Dropdown(Component):
                 2,
             )
         else:
-            pygame.draw.line(
+            draw.line(
                 self.root,
                 WHITE,
                 (x, y + self.height // 6),
                 (x - self.height // 3, y - self.height // 6),
                 2,
             )
-            pygame.draw.line(
+            draw.line(
                 self.root,
                 WHITE,
                 (x, y + self.height // 6),
                 (x + self.height // 3, y - self.height // 6),
                 2,
             )
-        pygame.draw.rect(self.root, BLACK, self.root.get_rect(), 1)
+        draw.rect(self.root, BLACK, self.root.get_rect(), 1)
 
     def add(self, *options):
         """
@@ -119,11 +119,11 @@ class Dropdown(Component):
         Update the dropdown menu
 
         :param rel_mouse: Relative mouse position
-        :param events: Pygame Event list
+        :param events: Event list
         """
         on_click = False
         for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == MOUSEBUTTONDOWN:
                 on_click = True
 
         in_width = 0 <= rel_mouse[0] < self.width

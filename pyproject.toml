@@ -1,7 +1,7 @@
 [project]
 name = "guipylib"
 version = "0.0.0"
-description = "UI library for pygame"
+description = "UI library with GPU-accelerated rendering"
 readme = "README.md"
 license = "MIT"
 authors = [
@@ -20,7 +20,10 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
 ]
 dependencies = [
-    "pygame>=2.1.2",
+    "moderngl>=5.8.0",
+    "glfw>=2.6.0",
+    "Pillow>=9.0.0",
+    "numpy>=1.21.0",
 ]
 
 [project.urls]

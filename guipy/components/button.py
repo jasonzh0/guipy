@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import Surface, draw, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 from guipy.components._component import Component
 from guipy.utils import *
 
@@ -14,7 +14,7 @@ class Button(Component):
 
         :param width: button width in pixels, defaults to fit text
         :param height: button height in pixels, defaults to fit text
-        :param font: pygame Font object to use
+        :param font: Font object to use
         :param text: text to display on the button
         """
         if font == None:
@@ -30,8 +30,8 @@ class Button(Component):
 
         self.width = width
         self.height = height
-        self.off_surf = pygame.Surface((self.width, self.height)).convert_alpha()
-        self.on_surf = pygame.Surface((self.width, self.height)).convert_alpha()
+        self.off_surf = Surface((self.width, self.height)).convert_alpha()
+        self.on_surf = Surface((self.width, self.height)).convert_alpha()
 
         self.pressed = False
 
@@ -66,14 +66,14 @@ class Button(Component):
 
         self.off_surf.fill(TRANSPARENT)
         surf = self.off_surf
-        pygame.draw.rect(surf, LIGHT_GREY, surf.get_rect())
-        pygame.draw.rect(surf, DARK_GREY, surf.get_rect(), 1)
+        draw.rect(surf, LIGHT_GREY, surf.get_rect())
+        draw.rect(surf, DARK_GREY, surf.get_rect(), 1)
         surf.blit(text_surf, pos)
 
         self.on_surf.fill(TRANSPARENT)
         surf = self.on_surf
-        pygame.draw.rect(surf, GREY, surf.get_rect())
-        pygame.draw.rect(surf, DARK_GREY, surf.get_rect(), 1)
+        draw.rect(surf, GREY, surf.get_rect())
+        draw.rect(surf, DARK_GREY, surf.get_rect(), 1)
         surf.blit(text_surf, pos)
 
     def set_text(self, text):
@@ -104,14 +104,14 @@ class Button(Component):
         Update the button
 
         :param rel_mouse: Relative mouse position
-        :param events: Pygame Event list
+        :param events: Event list
         """
         on_click = False
         on_release = False
         for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == MOUSEBUTTONDOWN:
                 on_click = True
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == MOUSEBUTTONUP:
                 on_release = True
 
         in_comp = self._collide(rel_mouse)

@@ -3,12 +3,11 @@ import sys
 import inspect
 import colorsys
 
-import pygame
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
+from guipy.backend import Window, Surface, draw, QUIT
 from guipy.components.slider import Slider
 from guipy.manager import GUIManager
 from guipy.utils import *
@@ -16,7 +15,8 @@ from guipy.utils import *
 winW = 1280
 winH = 720
 
-root = pygame.display.set_mode((winW, winH))
+window = Window(winW, winH, "Slider Test")
+root = Surface((winW, winH))
 
 man = GUIManager()
 
@@ -30,10 +30,11 @@ man.add(mySlider2, (0, 75))
 man.add(mySlider3, (0, 125))
 man.add(mySlider4, (0, 175))
 
-while True:
-    events = pygame.event.get()
+while not window.should_close():
+    events = window.get_events()
     for event in events:
-        if event.type == pygame.QUIT:
+        if event.type == QUIT:
+            window.destroy()
             sys.exit()
 
     root.fill((50, 50, 50))
@@ -44,8 +45,8 @@ while True:
     )
     center = (winW // 2, winH // 2)
     r = 10 + mySlider.val * 100
-    pygame.draw.circle(root, color, center, r)
-    pygame.draw.circle(root, BLACK, center, r, 3)
+    draw.circle(root, color, center, r)
+    draw.circle(root, BLACK, center, r, 3)
 
-    man.update(pygame.mouse.get_pos(), events, root)
-    pygame.display.update()
+    man.update(window.get_mouse_pos(), events, root)
+    window.display(root)

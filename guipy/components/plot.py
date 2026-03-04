@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import Surface, draw, transform
 from guipy.components._component import Component
 from guipy.utils import *
 from math import *
@@ -14,7 +14,7 @@ def line(surf, points):
     last = None
     for p in points:
         if last:
-            pygame.draw.line(surf, BLUE, last, p, 2)
+            draw.line(surf, BLUE, last, p, 2)
         last = p
 
 
@@ -53,8 +53,8 @@ class Plot(Component):
         self.set_range((0, 0), (0, 0))
 
         self.font = get_default_font()
-        self.root = pygame.Surface((self.width, self.height)).convert_alpha()
-        self.window = pygame.Surface((width - yaxis_width, height - xaxis_height))
+        self.root = Surface((self.width, self.height)).convert_alpha()
+        self.window = Surface((width - yaxis_width, height - xaxis_height))
         self.windrect = self.window.get_rect().inflate(-5, -5)
 
     def _x(self, x):  # coordinate to pixel
@@ -90,7 +90,7 @@ class Plot(Component):
                     self.root.blit(num, p2)
                 else:
                     p2 = (x, h + self.short_tick)
-                pygame.draw.line(self.root, BLACK, (x, h), p2, 1)
+                draw.line(self.root, BLACK, (x, h), p2, 1)
                 i += 1
 
             # draw y-axis
@@ -108,7 +108,7 @@ class Plot(Component):
                     self.root.blit(self.font.render(n, True, BLACK), p2)
                 else:
                     p2 = (w + self.short_tick, y)
-                pygame.draw.line(self.root, BLACK, (w, y), p2, 1)
+                draw.line(self.root, BLACK, (w, y), p2, 1)
                 i += 1
 
         if not self.xlabel == None:
@@ -118,7 +118,7 @@ class Plot(Component):
 
         if not self.ylabel == None:
             label = self.font.render(self.ylabel, True, BLACK)
-            label = pygame.transform.rotate(label, 90)
+            label = transform.rotate(label, 90)
             p = (self.width - label.get_width(), (h - label.get_height()) / 2)
             self.root.blit(label, p)
 
@@ -126,7 +126,7 @@ class Plot(Component):
             self.styles[i](self.window, self.points[i])
 
         self.root.blit(self.window, (0, 0))
-        pygame.draw.rect(self.root, BLACK, self.window.get_rect(), 1)
+        draw.rect(self.root, BLACK, self.window.get_rect(), 1)
 
     def set_range(self, xrange, yrange):
         """
@@ -166,7 +166,7 @@ class Plot(Component):
         Update the plot
 
         :param rel_mouse: Relative mouse position
-        :param events: Pygame Event list
+        :param events: Event list
         """
         self._draw()
         self.window.fill(WHITE)
@@ -242,7 +242,7 @@ class LivePlot(Plot):
         Updates the plot
 
         :param rel_mouse: relative mouse position
-        :param events: Pygame event list
+        :param events: Event list
         """
         if len(self.buffer) > 1:
             if self.glide < 0:

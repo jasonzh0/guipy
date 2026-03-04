@@ -2,21 +2,21 @@ import sys
 import os
 import inspect
 
-import pygame
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
+from guipy.backend import Window, Surface, SysFont, QUIT
 from guipy.manager import GUIManager
 from guipy.components.textbox import Textbox
 
-myFont = pygame.font.SysFont("Microsoft Sans Serif", 20)
+myFont = SysFont("Microsoft Sans Serif", 20)
 
 winW = 1280
 winH = 720
 
-root = pygame.display.set_mode((winW, winH))
+window = Window(winW, winH, "Textbox Test")
+root = Surface((winW, winH))
 
 man = GUIManager()
 myTextbox1 = Textbox(width=400, font=myFont).set_func(lambda x: print("1: " + x.text))
@@ -28,12 +28,13 @@ man.add(myTextbox1, (10, 25))
 man.add(myTextbox2, (10, 75))
 man.add(myTextbox3, (10, 125))
 man.add(myTextbox4, (10, 175))
-while True:
-    events = pygame.event.get()
+while not window.should_close():
+    events = window.get_events()
     for event in events:
-        if event.type == pygame.QUIT:
+        if event.type == QUIT:
+            window.destroy()
             sys.exit()
     root.fill((200, 200, 200))
 
-    man.update(pygame.mouse.get_pos(), events, root)
-    pygame.display.update()
+    man.update(window.get_mouse_pos(), events, root)
+    window.display(root)

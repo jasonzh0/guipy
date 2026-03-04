@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import Surface, draw, MOUSEBUTTONDOWN, MOUSEBUTTONUP
 from guipy.components._component import Component
 from guipy.utils import *
 
@@ -21,7 +21,7 @@ class Slider(Component):
         self.width = width
         self.height = height
 
-        self.root = pygame.Surface((self.width, self.height)).convert_alpha()
+        self.root = Surface((self.width, self.height)).convert_alpha()
 
         self.thickness = thickness
         self.val = initial_val
@@ -40,25 +40,25 @@ class Slider(Component):
 
         pVal = (self.r + self.val * (self.width - self.r * 2), self.height // 2)
 
-        pygame.draw.line(self.root, (57, 189, 248), p1, pVal, self.thickness)
-        pygame.draw.line(self.root, (200, 200, 200), pVal, p2, self.thickness)
+        draw.line(self.root, (57, 189, 248), p1, pVal, self.thickness)
+        draw.line(self.root, (200, 200, 200), pVal, p2, self.thickness)
 
-        pygame.draw.circle(self.root, (0, 0, 0), pVal, self.r)
-        pygame.draw.circle(self.root, (255, 255, 255), pVal, self.r - 3)
+        draw.circle(self.root, (0, 0, 0), pVal, self.r)
+        draw.circle(self.root, (255, 255, 255), pVal, self.r - 3)
 
     def update(self, rel_mouse, events):
         """
         Updates slider logic
 
         :param rel_mouse: relative mouse position based on slider position
-        :param events: Pygame event list
+        :param events: Event list
         """
         on_click = False
         on_release = False
         for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == MOUSEBUTTONDOWN:
                 on_click = True
-            if event.type == pygame.MOUSEBUTTONUP:
+            if event.type == MOUSEBUTTONUP:
                 on_release = True
 
         in_comp = self._collide(rel_mouse)

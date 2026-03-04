@@ -1,4 +1,4 @@
-import pygame
+from guipy.backend import Surface
 
 
 class Component:
@@ -8,7 +8,7 @@ class Component:
         """
         self.width = width
         self.height = height
-        self.root = pygame.Surface((width, height))
+        self.root = Surface((width, height))
 
     def _draw(self):
         """
@@ -38,6 +38,6 @@ class Component:
         Update the component. Gets the surface ready to be used
 
         :param rel_mouse: Mouse position relative to the component
-        :param events: Pygame event list
+        :param events: Event list
         """
         self._draw()

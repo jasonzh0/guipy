@@ -3,12 +3,11 @@ import os
 import inspect
 import time
 
-import pygame
-
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
+from guipy.backend import Window, Surface, QUIT
 from guipy.manager import GUIManager
 from guipy.components.plot import Plot
 from guipy.utils import *
@@ -16,7 +15,8 @@ from guipy.utils import *
 winW = 1280
 winH = 720
 
-root = pygame.display.set_mode((winW, winH))
+window = Window(winW, winH, "Plot Test")
+root = Surface((winW, winH))
 
 myPlot1 = Plot(height=winH, width=winW, xlabel="X axis", ylabel="Y axis")
 
@@ -29,15 +29,15 @@ y = 1
 start = time.time()
 count = 0
 running = True
-while running:
+while running and not window.should_close():
     t = time.time()
-    events = pygame.event.get()
+    events = window.get_events()
     for event in events:
-        if event.type == pygame.QUIT:
+        if event.type == QUIT:
             running = False
     root.fill(LIGHT_GREY)
 
-    p = pygame.mouse.get_pos()
+    p = window.get_mouse_pos()
     x = p[0] if p[0] else x
     y = p[1] if p[1] else y
 
@@ -50,8 +50,11 @@ while running:
         [(10, 60), (10, 40), (0, 30), (0, 10), (10, 0), (20, 10), (20, 30), (15, 35)]
     )
 
-    man.update(pygame.mouse.get_pos(), events, root)
-    pygame.display.update()
+    man.update(window.get_mouse_pos(), events, root)
+    window.display(root)
     count += 1
 
-print(f"Average fps: {count//(time.time() - start)}")
+elapsed = time.time() - start
+if elapsed > 0:
+    print(f"Average fps: {count//elapsed}")
+window.destroy()
