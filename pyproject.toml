@@ -22,7 +22,7 @@ classifiers = [
 dependencies = [
     "moderngl>=5.8.0",
     "glfw>=2.6.0",
-    "Pillow>=9.0.0",
+    "freetype-py>=2.3.0",
     "numpy>=1.21.0",
 ]
 

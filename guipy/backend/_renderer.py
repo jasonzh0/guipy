@@ -5,6 +5,7 @@ from guipy.backend._events import (
     Event, QUIT, MOUSEBUTTONDOWN, MOUSEBUTTONUP, KEYDOWN, MOUSEMOTION, K_RETURN, K_BACKSPACE,
 )
 from guipy.backend._shaders import VERTEX_SHADER, FRAGMENT_SHADER
+from guipy.backend import _gpu
 
 
 # Map GLFW keys to our key constants
@@ -39,7 +40,10 @@ class Window:
         self._width = width
         self._height = height
 
-        # Fullscreen quad
+        # Initialize GPU subsystem with this context
+        _gpu.init_gpu(self._ctx)
+
+        # Fullscreen quad for final screen blit
         vertices = np.array([
             # x, y, u, v
             -1.0, -1.0, 0.0, 0.0,
@@ -58,9 +62,6 @@ class Window:
             self._prog,
             [(vbo, '2f 2f', 'in_position', 'in_texcoord')],
         )
-
-        self._texture = self._ctx.texture((width, height), 4)
-        self._texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
 
         self._event_queue = []
         self._close_requested = False
@@ -113,20 +114,14 @@ class Window:
         return (int(x), int(y))
 
     def display(self, surface):
-        """Upload a Surface to the GPU and render it."""
-        pixels = surface._pixels
-        # Flip vertically for OpenGL (origin at bottom-left)
-        flipped = np.flipud(pixels).copy()
+        """Render the surface's texture to screen."""
+        # Bind default framebuffer (screen)
+        self._ctx.screen.use()
+        fb_width, fb_height = glfw.get_framebuffer_size(self._window)
+        self._ctx.viewport = (0, 0, fb_width, fb_height)
+        self._ctx.disable(moderngl.BLEND)
 
-        h, w = flipped.shape[:2]
-        if w != self._texture.width or h != self._texture.height:
-            self._texture.release()
-            self._texture = self._ctx.texture((w, h), 4)
-            self._texture.filter = (moderngl.NEAREST, moderngl.NEAREST)
-
-        self._texture.write(flipped.tobytes())
-        self._texture.use(0)
-
+        surface._texture.use(0)
         self._ctx.clear()
         self._vao.render(moderngl.TRIANGLE_STRIP)
         glfw.swap_buffers(self._window)
@@ -136,7 +131,6 @@ class Window:
 
     def destroy(self):
         """Clean up resources."""
-        self._texture.release()
         self._vao.release()
         self._prog.release()
         self._ctx.release()

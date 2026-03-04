@@ -1,7 +1,7 @@
 import os
 import sys
 import glob as globmod
-from PIL import ImageFont, ImageDraw, Image
+import freetype
 import numpy as np
 from guipy.backend._surface import Surface
 
@@ -110,56 +110,102 @@ def _get_fallback_font_path():
 
 
 class Font:
-    """Pillow-based font replacement for pygame.font.Font."""
+    """freetype-py based font replacement for pygame.font.Font."""
 
     def __init__(self, path, size):
         self._size = size
         if path:
-            self._font = ImageFont.truetype(path, size)
+            self._face = freetype.Face(path)
         else:
             fallback = _get_fallback_font_path()
             if fallback:
-                self._font = ImageFont.truetype(fallback, size)
+                self._face = freetype.Face(fallback)
             else:
-                self._font = ImageFont.load_default()
+                raise RuntimeError("No font found")
+        self._face.set_char_size(size * 64)  # freetype uses 1/64 pixel units
 
     def render(self, text, antialias, color, background=None):
         """Render text to a Surface."""
         if not text:
             text = " "
 
-        # Measure text
-        bbox = self._font.getbbox(text)
-        tw = bbox[2] - bbox[0]
-        th = self.get_linesize()
-
-        img = Image.new("RGBA", (tw, th), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(img)
-
         if len(color) == 4:
-            fill = tuple(color)
+            r, g, b, a = color
         else:
-            fill = (color[0], color[1], color[2], 255)
+            r, g, b = color
+            a = 255
 
-        draw.text((0, 0), text, font=self._font, fill=fill)
+        # First pass: compute total width and collect glyph data
+        glyphs = []
+        total_width = 0
+        for char in text:
+            self._face.load_char(char, freetype.FT_LOAD_RENDER)
+            glyph = self._face.glyph
+            glyphs.append({
+                'bitmap': np.array(glyph.bitmap.buffer, dtype=np.uint8).reshape(
+                    glyph.bitmap.rows, glyph.bitmap.width
+                ).copy() if glyph.bitmap.width > 0 and glyph.bitmap.rows > 0 else None,
+                'width': glyph.bitmap.width,
+                'rows': glyph.bitmap.rows,
+                'left': glyph.bitmap_left,
+                'top': glyph.bitmap_top,
+                'advance': glyph.advance.x >> 6,
+            })
+            total_width += glyph.advance.x >> 6
 
-        arr = np.array(img, dtype=np.uint8)
+        height = self.get_linesize()
+        ascender = self._face.size.ascender >> 6
+
+        if total_width <= 0:
+            total_width = 1
+        if height <= 0:
+            height = 1
+
+        arr = np.zeros((height, total_width, 4), dtype=np.uint8)
+
+        pen_x = 0
+        for glyph_data in glyphs:
+            bmp = glyph_data['bitmap']
+            if bmp is not None:
+                bx = pen_x + glyph_data['left']
+                by = ascender - glyph_data['top']
+
+                # Clip to array bounds
+                src_y0 = max(0, -by)
+                src_x0 = max(0, -bx)
+                dst_y0 = max(0, by)
+                dst_x0 = max(0, bx)
+                src_y1 = min(glyph_data['rows'], height - by) if by >= 0 else min(glyph_data['rows'], height)
+                src_x1 = min(glyph_data['width'], total_width - bx) if bx >= 0 else min(glyph_data['width'], total_width)
+
+                if src_y0 < src_y1 and src_x0 < src_x1:
+                    h_slice = slice(dst_y0, dst_y0 + src_y1 - src_y0)
+                    w_slice = slice(dst_x0, dst_x0 + src_x1 - src_x0)
+                    alpha_region = bmp[src_y0:src_y1, src_x0:src_x1]
+                    arr[h_slice, w_slice, 0] = r
+                    arr[h_slice, w_slice, 1] = g
+                    arr[h_slice, w_slice, 2] = b
+                    arr[h_slice, w_slice, 3] = (alpha_region.astype(np.uint16) * a // 255).astype(np.uint8)
+
+            pen_x += glyph_data['advance']
+
         return Surface._from_array(arr)
 
     def size(self, text):
         """Return (width, height) of rendered text."""
         if not text:
             return (0, self.get_height())
-        bbox = self._font.getbbox(text)
-        return (bbox[2] - bbox[0], self.get_height())
+        total_width = 0
+        for char in text:
+            self._face.load_char(char, freetype.FT_LOAD_RENDER)
+            total_width += self._face.glyph.advance.x >> 6
+        return (total_width, self.get_height())
 
     def get_height(self):
-        bbox = self._font.getbbox("Ay")
-        return bbox[3] - bbox[1]
+        return (self._face.size.ascender - self._face.size.descender) >> 6
 
     def get_linesize(self):
-        metrics = self._font.getmetrics()
-        return metrics[0] + metrics[1]
+        return self._face.size.height >> 6
 
 
 def SysFont(name, size, bold=False, italic=False):

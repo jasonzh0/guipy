@@ -1,32 +1,43 @@
 import numpy as np
 from guipy.backend._rect import Rect
+from guipy.backend import _gpu
 
 
 class Surface:
-    """numpy-based replacement for pygame.Surface. Stores pixels as (h, w, 4) uint8 RGBA."""
+    """GPU-backed surface using moderngl FBO + texture."""
 
     def __init__(self, size, flags=0):
         w, h = int(size[0]), int(size[1])
-        self._pixels = np.zeros((h, w, 4), dtype=np.uint8)
+        ctx = _gpu.get_context()
+        self._texture = ctx.texture((w, h), 4)
+        self._texture.filter = (ctx.NEAREST, ctx.NEAREST)
+        self._fbo = ctx.framebuffer(color_attachments=[self._texture])
+        self._fbo.clear(0.0, 0.0, 0.0, 0.0)
 
     @classmethod
     def _from_array(cls, arr):
         s = cls.__new__(cls)
-        s._pixels = arr
+        ctx = _gpu.get_context()
+        h, w = arr.shape[:2]
+        s._texture = ctx.texture((w, h), 4)
+        s._texture.filter = (ctx.NEAREST, ctx.NEAREST)
+        # OpenGL expects bottom-up row order
+        flipped = np.flipud(arr).copy()
+        s._texture.write(flipped.tobytes())
+        s._fbo = ctx.framebuffer(color_attachments=[s._texture])
         return s
 
     def get_size(self):
-        h, w = self._pixels.shape[:2]
-        return (w, h)
+        return self._texture.size
 
     def get_width(self):
-        return self._pixels.shape[1]
+        return self._texture.width
 
     def get_height(self):
-        return self._pixels.shape[0]
+        return self._texture.height
 
     def get_rect(self):
-        h, w = self._pixels.shape[:2]
+        w, h = self._texture.size
         return Rect(0, 0, w, h)
 
     def convert_alpha(self):
@@ -34,44 +45,23 @@ class Surface:
 
     def fill(self, color):
         c = _normalize_color(color)
-        self._pixels[:, :] = c
+        self._fbo.clear(c[0] / 255.0, c[1] / 255.0, c[2] / 255.0, c[3] / 255.0)
 
     def blit(self, source, pos):
-        dx, dy = int(pos[0]), int(pos[1])
-        src = source._pixels
-        sh, sw = src.shape[:2]
-        dh, dw = self._pixels.shape[:2]
-
-        # Compute clipped region
-        sx0 = max(0, -dx)
-        sy0 = max(0, -dy)
-        dx0 = max(0, dx)
-        dy0 = max(0, dy)
-        cw = min(sw - sx0, dw - dx0)
-        ch = min(sh - sy0, dh - dy0)
-
-        if cw <= 0 or ch <= 0:
-            return
-
-        src_region = src[sy0:sy0 + ch, sx0:sx0 + cw]
-        dst_region = self._pixels[dy0:dy0 + ch, dx0:dx0 + cw]
-
-        # Alpha compositing
-        sa = src_region[:, :, 3:4].astype(np.float32) / 255.0
-        da = dst_region[:, :, 3:4].astype(np.float32) / 255.0
-
-        out_a = sa + da * (1.0 - sa)
-        # Avoid division by zero
-        safe_out_a = np.where(out_a > 0, out_a, 1.0)
-
-        out_rgb = (src_region[:, :, :3].astype(np.float32) * sa +
-                   dst_region[:, :, :3].astype(np.float32) * da * (1.0 - sa)) / safe_out_a
-
-        self._pixels[dy0:dy0 + ch, dx0:dx0 + cw, :3] = np.clip(out_rgb, 0, 255).astype(np.uint8)
-        self._pixels[dy0:dy0 + ch, dx0:dx0 + cw, 3:4] = np.clip(out_a * 255, 0, 255).astype(np.uint8)
+        _gpu.blit_texture(self._fbo, self.get_size(),
+                          source._texture, source.get_size(), pos)
 
     def copy(self):
-        return Surface._from_array(self._pixels.copy())
+        ctx = _gpu.get_context()
+        w, h = self._texture.size
+        data = self._fbo.read(components=4)
+        new_tex = ctx.texture((w, h), 4)
+        new_tex.filter = (ctx.NEAREST, ctx.NEAREST)
+        new_tex.write(data)
+        s = Surface.__new__(Surface)
+        s._texture = new_tex
+        s._fbo = ctx.framebuffer(color_attachments=[new_tex])
+        return s
 
 
 def _normalize_color(color):
